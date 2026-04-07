@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIT — Student Activity Intelligence Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080a0f;
+    --surface: #0e1118;
+    --surface2: #141720;
+    --border: rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.12);
+    --text: #dde1f0;
+    --muted: #5e6680;
+    --accent: #4f7cff;
+    --accent-glow: rgba(79,124,255,0.25);
+    --green: #2dd98f;
+    --red: #ff5f5f;
+    --amber: #f5a623;
+    --font: 'Bricolage Grotesque', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+  }
+
+  /* ─── BG GRID ─────────────────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(79,124,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,124,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── GLOW ORBS ────────────────────────────────────────────── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    animation: orbFloat 8s ease-in-out infinite;
+  }
+  .orb1 { width: 400px; height: 400px; background: rgba(79,124,255,0.12); top: -100px; left: -100px; }
+  .orb2 { width: 300px; height: 300px; background: rgba(45,217,143,0.08); bottom: -50px; right: -50px; animation-delay: -4s; }
+  @keyframes orbFloat { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-20px)} }
+
+  /* ─── LAYOUT ────────────────────────────────────────────────── */
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .auth-shell {
+    width: 100%;
+    max-width: 460px;
+  }
+
+  /* ─── LOGO ──────────────────────────────────────────────────── */
+  .logo-area {
+    text-align: center;
+    margin-bottom: 32px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .logo-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, #4f7cff 0%, #2dd98f 100%);
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-bottom: 14px;
+    box-shadow: 0 0 40px rgba(79,124,255,0.3);
+  }
+  .logo-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(90deg, #dde1f0 0%, #8496cc 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .logo-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+  }
+
+  /* ─── ROLE SELECTOR ─────────────────────────────────────────── */
+  .role-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+    animation: fadeUp 0.5s 0.1s ease both;
+  }
+  .role-btn {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    font-family: var(--font);
+    color: var(--muted);
+  }
+  .role-btn:hover { border-color: rgba(79,124,255,0.4); color: var(--text); }
+  .role-btn.active {
+    border-color: var(--accent);
+    background: rgba(79,124,255,0.08);
+    color: var(--text);
+    box-shadow: 0 0 20px rgba(79,124,255,0.15);
+  }
+  .role-icon { font-size: 22px; margin-bottom: 5px; }
+  .role-label { font-size: 13px; font-weight: 500; }
+  .role-desc { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+
+  /* ─── CARD ──────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 18px;
+    padding: 28px;
+    animation: fadeUp 0.5s 0.2s ease both;
+    backdrop-filter: blur(10px);
+  }
+
+  /* ─── TABS ──────────────────────────────────────────────────── */
+  .tabs {
+    display: flex;
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.2s;
+    font-family: var(--font);
+    border: none;
+    background: none;
+  }
+  .tab.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+
+  /* ─── FORM ──────────────────────────────────────────────────── */
+  .form-section { display: none; }
+  .form-section.active { display: block; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 6px;
+  }
+
+  .input-wrap { position: relative; }
+  .input-icon {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    color: var(--muted);
+    pointer-events: none;
+    line-height: 1;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    padding: 11px 12px 11px 38px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .form-input::placeholder { color: var(--muted); }
+  .form-input.no-icon { padding-left: 12px; }
+
+  .eye-btn {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 14px; padding: 2px;
+    line-height: 1;
+  }
+  .eye-btn:hover { color: var(--text); }
+
+  /* ─── DIVIDER ────────────────────────────────────────────────── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border2);
+  }
+
+  /* ─── SECTION LABEL ──────────────────────────────────────────── */
+  .section-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 10px;
+    margin-top: 4px;
+  }
+
+  /* ─── BTN ────────────────────────────────────────────────────── */
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, var(--accent) 0%, #3a6bff 100%);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(79,124,255,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(79,124,255,0.4); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-loading { display: none; }
+
+  /* ─── STATUS MESSAGES ────────────────────────────────────────── */
+  .msg {
+    padding: 10px 14px;
+    border-radius: 9px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .msg.visible { display: flex; }
+  .msg-error { background: rgba(255,95,95,0.1); border: 1px solid rgba(255,95,95,0.25); color: #ff9090; }
+  .msg-success { background: rgba(45,217,143,0.1); border: 1px solid rgba(45,217,143,0.25); color: #5ee8a8; }
+
+  /* ─── DEMO CREDS ──────────────────────────────────────────────── */
+  .demo-creds {
+    margin-top: 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .demo-title {
+    font-size: 10px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+  .demo-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    gap: 8px;
+  }
+  .demo-row:last-child { margin-bottom: 0; }
+  .demo-key { font-size: 11px; color: var(--muted); font-family: var(--mono); min-width: 60px; }
+  .demo-val {
+    font-size: 11px;
+    color: var(--text);
+    font-family: var(--mono);
+    background: var(--bg);
+    padding: 3px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    flex: 1;
+  }
+  .demo-fill {
+    font-size: 10px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: var(--mono);
+    background: none;
+    border: none;
+    padding: 3px 6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .demo-fill:hover { background: rgba(79,124,255,0.1); }
+
+  /* ─── FOOTER ──────────────────────────────────────────────────── */
+  .auth-footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 16px;
+    animation: fadeUp 0.5s 0.3s ease both;
+  }
+
+  /* ─── PASSWORD STRENGTH ───────────────────────────────────────── */
+  .strength-bar {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--surface2);
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .strength-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s, background 0.3s;
+    width: 0;
+  }
+  .strength-text {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted);
+    margin-top: 3px;
+    display: none;
+  }
+
+  /* ─── SELECT STYLED ───────────────────────────────────────────── */
+  .form-select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    padding: 11px 12px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: var(--font);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .form-select option { background: var(--surface2); }
+
+  /* ─── ANIM ────────────────────────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── DASHBOARD PREVIEW (post-login) ─────────────────────────── */
+  #dashboard-preview {
+    display: none;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+  .dash-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .dash-avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .dash-name { font-size: 14px; font-weight: 500; }
+  .dash-role { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    padding: 6px 14px;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .logout-btn:hover { color: var(--text); border-color: var(--border2); }
+
+  .dash-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+  .dash-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .dash-card-label { font-size: 10px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+  .dash-card-value { font-size: 24px; font-weight: 700; }
+  .dash-card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .risk-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .risk-low { background: rgba(45,217,143,0.1); color: var(--green); border: 1px solid rgba(45,217,143,0.2); }
+  .risk-medium { background: rgba(245,166,35,0.1); color: var(--amber); border: 1px solid rgba(245,166,35,0.2); }
+  .risk-high { background: rgba(255,95,95,0.1); color: var(--red); border: 1px solid rgba(255,95,95,0.2); }
+  .risk-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  .profile-detail {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .pd-title { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; }
+  .pd-row { display: flex; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .pd-row:last-child { border-bottom: none; }
+  .pd-key { font-size: 12px; color: var(--muted); width: 120px; flex-shrink: 0; }
+  .pd-val { font-size: 13px; font-weight: 500; }
+
+  .open-main-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--font);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .open-main-btn:hover { background: rgba(79,124,255,0.1); }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="page-wrap">
+  <div class="auth-shell">
+
+    <!-- AUTH SECTION -->
+    <div id="auth-section">
+      <div class="logo-area">
+        <div class="logo-icon">🎓</div>
+        <div class="logo-title">SAIT</div>
+        <div class="logo-sub">Student Activity Intelligence Tracker</div>
+      </div>
+
+      <!-- ROLE SELECTOR -->
+      <div class="role-selector">
+        <div class="role-btn active" id="role-student" onclick="selectRole('student')">
+          <div class="role-icon">🧑‍🎓</div>
+          <div class="role-label">Student</div>
+          <div class="role-desc">Track your progress</div>
+        </div>
+        <div class="role-btn" id="role-teacher" onclick="selectRole('teacher')">
+          <div class="role-icon">🧑‍🏫</div>
+          <div class="role-label">Teacher</div>
+          <div class="role-desc">Manage your class</div>
+        </div>
+      </div>
+
+      <!-- CARD -->
+      <div class="card">
+        <div class="tabs">
+          <button class="tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+          <button class="tab" id="tab-register" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <div id="msg" class="msg"></div>
+
+        <!-- ── LOGIN ── -->
+        <div class="form-section active" id="section-login">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <div class="input-wrap">
+              <span class="input-icon">✉</span>
+              <input class="form-input" id="login-email" type="email" placeholder="your@email.com">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔒</span>
+              <input class="form-input" id="login-password" type="password" placeholder="••••••••">
+              <button class="eye-btn" type="button" onclick="toggleEye('login-password',this)">👁</button>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+            <a href="#" style="font-size:12px;color:var(--accent);text-decoration:none">Forgot password?</a>
+          </div>
+
+          <button class="btn-primary" id="login-btn" onclick="doLogin()">
+            <span id="login-label">Sign In</span>
+          </button>
+
+          <!-- DEMO CREDS -->
+          <div class="demo-creds" id="demo-student">
+            <div class="demo-title">⚡ Demo Credentials</div>
+            <div class="demo-row">
+              <span class="demo-key">Email</span>
+              <span class="demo-val">sneha@student.sait.edu</span>
+              <button class="demo-fill" onclick="fillDemo('sneha@student.sait.edu','student123')">Fill ↗</button>
+            </div>
+            <div class="demo-row">
+              <span class="demo-key">Password</span>
+              <span class="demo-val">student123</span>
+            </div>
+          </div>
+
+          <div class="demo-creds" id="demo-teacher" style="display:none;margin-top:8px">
+            <div class="demo-title">⚡ Demo Credentials</div>
+            <div class="demo-row">
+              <span class="demo-key">Email</span>
+              <span class="demo-val">teacher@sait.edu</span>
+              <button class="demo-fill" onclick="fillDemo('teacher@sait.edu','teacher123')">Fill ↗</button>
+            </div>
+            <div class="demo-row">
+              <span class="demo-key">Password</span>
+              <span class="demo-val">teacher123</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── REGISTER ── -->
+        <div class="form-section" id="section-register">
+
+          <!-- STUDENT REGISTER -->
+          <div id="reg-student">
+            <div class="section-label">Personal Information</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <div class="input-wrap">
+                  <span class="input-icon">👤</span>
+                  <input class="form-input" id="s-name" type="text" placeholder="Your full name">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Student ID</label>
+                <div class="input-wrap">
+                  <span class="input-icon">#</span>
+                  <input class="form-input" id="s-sid" type="text" placeholder="STU-001">
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <div class="input-wrap">
+                <span class="input-icon">✉</span>
+                <input class="form-input" id="s-email" type="email" placeholder="you@student.sait.edu">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Phone</label>
+                <div class="input-wrap">
+                  <span class="input-icon">📱</span>
+                  <input class="form-input" id="s-phone" type="tel" placeholder="+91-XXXXXXXXXX">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Year</label>
+                <select class="form-select" id="s-year">
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="divider">Academic Details</div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Course</label>
+                <div class="input-wrap">
+                  <span class="input-icon">📚</span>
+                  <input class="form-input" id="s-course" type="text" placeholder="B.Tech CS">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Department</label>
+                <div class="input-wrap">
+                  <span class="input-icon">🏛</span>
+                  <input class="form-input" id="s-dept" type="text" placeholder="Computer Science">
+                </div>
+              </div>
+            </div>
+
+            <div class="divider">Set Password</div>
+
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input class="form-input" id="s-pw" type="password" placeholder="Min 8 characters" oninput="checkStrength(this,'s-strength','s-strength-text')">
+                <button class="eye-btn" type="button" onclick="toggleEye('s-pw',this)">👁</button>
+              </div>
+              <div class="strength-bar"><div class="strength-fill" id="s-strength"></div></div>
+              <div class="strength-text" id="s-strength-text"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm Password</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input class="form-input" id="s-pw2" type="password" placeholder="Repeat password">
+              </div>
+            </div>
+
+            <button class="btn-primary" onclick="doRegisterStudent()">Create Student Account</button>
+          </div>
+
+          <!-- TEACHER REGISTER -->
+          <div id="reg-teacher" style="display:none">
+            <div class="section-label">Personal Information</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <div class="input-wrap">
+                  <span class="input-icon">👤</span>
+                  <input class="form-input" id="t-name" type="text" placeholder="Dr. / Prof. ...">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teacher ID</label>
+                <div class="input-wrap">
+                  <span class="input-icon">#</span>
+                  <input class="form-input" id="t-tid" type="text" placeholder="TCH-001">
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <div class="input-wrap">
+                <span class="input-icon">✉</span>
+                <input class="form-input" id="t-email" type="email" placeholder="you@sait.edu">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <div class="input-wrap">
+                <span class="input-icon">📱</span>
+                <input class="form-input" id="t-phone" type="tel" placeholder="+91-XXXXXXXXXX">
+              </div>
+            </div>
+
+            <div class="divider">Academic Details</div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Department</label>
+                <div class="input-wrap">
+                  <span class="input-icon">🏛</span>
+                  <input class="form-input" id="t-dept" type="text" placeholder="Computer Science">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subject</label>
+                <div class="input-wrap">
+                  <span class="input-icon">📖</span>
+                  <input class="form-input" id="t-subj" type="text" placeholder="Data Structures">
+                </div>
+              </div>
+            </div>
+
+            <div class="divider">Set Password</div>
+
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input class="form-input" id="t-pw" type="password" placeholder="Min 8 characters" oninput="checkStrength(this,'t-strength','t-strength-text')">
+                <button class="eye-btn" type="button" onclick="toggleEye('t-pw',this)">👁</button>
+              </div>
+              <div class="strength-bar"><div class="strength-fill" id="t-strength"></div></div>
+              <div class="strength-text" id="t-strength-text"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm Password</label>
+              <div class="input-wrap">
+                <span class="input-icon">🔒</span>
+                <input class="form-input" id="t-pw2" type="password" placeholder="Repeat password">
+              </div>
+            </div>
+
+            <button class="btn-primary" onclick="doRegisterTeacher()">Create Teacher Account</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        Secure auth · JWT tokens · bcrypt encrypted · SAIT v1.0
+      </div>
+    </div>
+
+    <!-- DASHBOARD PREVIEW POST-LOGIN -->
+    <div id="dashboard-preview">
+      <div class="logo-area" style="margin-bottom:20px">
+        <div class="logo-icon">✅</div>
+        <div class="logo-title">Welcome Back!</div>
+        <div class="logo-sub">You are now signed in to SAIT</div>
+      </div>
+
+      <div class="dash-header">
+        <div class="dash-user">
+          <div class="dash-avatar" id="dash-avatar"></div>
+          <div>
+            <div class="dash-name" id="dash-name"></div>
+            <div class="dash-role" id="dash-role-label"></div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+      </div>
+
+      <div id="student-dash" style="display:none">
+        <div class="dash-cards" id="student-metrics"></div>
+        <div class="profile-detail" id="student-profile-detail"></div>
+      </div>
+
+      <div id="teacher-dash" style="display:none">
+        <div class="profile-detail" id="teacher-profile-detail"></div>
+        <div class="dash-cards" id="teacher-metrics"></div>
+      </div>
+
+      <a href="index.html" class="open-main-btn" id="open-app-btn">Open Full Dashboard →</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+let currentRole = 'student';
+let currentTab = 'login';
+
+// ─── ROLE TOGGLE ──────────────────────────────────────────────────────────
+function selectRole(role) {
+  currentRole = role;
+  document.getElementById('role-student').classList.toggle('active', role === 'student');
+  document.getElementById('role-teacher').classList.toggle('active', role === 'teacher');
+  document.getElementById('demo-student').style.display = role === 'student' ? 'block' : 'none';
+  document.getElementById('demo-teacher').style.display = role === 'teacher' ? 'block' : 'none';
+  if (currentTab === 'register') {
+    document.getElementById('reg-student').style.display = role === 'student' ? 'block' : 'none';
+    document.getElementById('reg-teacher').style.display = role === 'teacher' ? 'block' : 'none';
+  }
+}
+
+// ─── TABS ──────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('section-login').classList.toggle('active', tab === 'login');
+  document.getElementById('section-register').classList.toggle('active', tab === 'register');
+  if (tab === 'register') {
+    document.getElementById('reg-student').style.display = currentRole === 'student' ? 'block' : 'none';
+    document.getElementById('reg-teacher').style.display = currentRole === 'teacher' ? 'block' : 'none';
+  }
+  clearMsg();
+}
+
+// ─── DEMO FILL ─────────────────────────────────────────────────────────────
+function fillDemo(email, password) {
+  document.getElementById('login-email').value = email;
+  document.getElementById('login-password').value = password;
+}
+
+// ─── EYE TOGGLE ────────────────────────────────────────────────────────────
+function toggleEye(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const isText = input.type === 'text';
+  input.type = isText ? 'password' : 'text';
+  btn.textContent = isText ? '👁' : '🙈';
+}
+
+// ─── PASSWORD STRENGTH ─────────────────────────────────────────────────────
+function checkStrength(input, barId, textId) {
+  const pw = input.value;
+  const bar = document.getElementById(barId);
+  const txt = document.getElementById(textId);
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const configs = [
+    { w: '25%', bg: '#ff5f5f', label: 'Weak' },
+    { w: '50%', bg: '#f5a623', label: 'Fair' },
+    { w: '75%', bg: '#4f7cff', label: 'Good' },
+    { w: '100%', bg: '#2dd98f', label: 'Strong' },
+  ];
+  const c = configs[Math.max(0, score - 1)];
+  bar.style.width = pw ? c.w : '0';
+  bar.style.background = c.bg;
+  txt.style.display = pw ? 'block' : 'none';
+  txt.textContent = pw ? `Password strength: ${c.label}` : '';
+  txt.style.color = c.bg;
+}
+
+// ─── MESSAGE ────────────────────────────────────────────────────────────────
+function showMsg(text, type = 'error') {
+  const el = document.getElementById('msg');
+  el.className = `msg visible msg-${type}`;
+  el.innerHTML = `<span>${type === 'error' ? '⚠' : '✓'}</span> ${text}`;
+}
+function clearMsg() {
+  const el = document.getElementById('msg');
+  el.className = 'msg';
+}
+
+// ─── API CALLS ──────────────────────────────────────────────────────────────
+async function apiPost(path, body) {
+  const res = await fetch(API + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Request failed');
+  return data;
+}
+
+async function apiGet(path, token) {
+  const res = await fetch(API + path, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'Request failed');
+  return data;
+}
+
+// ─── LOGIN ──────────────────────────────────────────────────────────────────
+async function doLogin() {
+  clearMsg();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showMsg('Please fill in all fields.'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  document.getElementById('login-label').textContent = 'Signing in...';
+
+  try {
+    // Try real API first, fall back to demo mode
+    let token, role, fullName, userId;
+    try {
+      const data = await apiPost('/auth/login', { email, password });
+      token = data.access_token;
+      role = data.role;
+      fullName = data.full_name;
+      userId = data.user_id;
+    } catch(apiErr) {
+      // Demo fallback (no backend running)
+      const demos = {
+        'sneha@student.sait.edu:student123':   { role:'student', name:'Sneha Iyer',       id:2 },
+        'rahul@student.sait.edu:student123':   { role:'student', name:'Rahul Kumar',      id:3 },
+        'riya@student.sait.edu:student123':    { role:'student', name:'Riya Sharma',      id:4 },
+        'teacher@sait.edu:teacher123':         { role:'teacher', name:'Dr. Priya Ramesh', id:1 },
+      };
+      const key = `${email}:${password}`;
+      if (!demos[key]) throw new Error('Invalid email or password');
+      const d = demos[key];
+      token = 'demo_token_' + btoa(JSON.stringify({id:d.id,role:d.role}));
+      role = d.role; fullName = d.name; userId = d.id;
+    }
+
+    localStorage.setItem('sait_token', token);
+    localStorage.setItem('sait_role', role);
+    localStorage.setItem('sait_name', fullName);
+    localStorage.setItem('sait_user_id', userId);
+
+    showDashboardPreview({ token, role, fullName });
+  } catch(err) {
+    showMsg(err.message);
+    btn.disabled = false;
+    document.getElementById('login-label').textContent = 'Sign In';
+  }
+}
+
+// ─── REGISTER STUDENT ────────────────────────────────────────────────────────
+async function doRegisterStudent() {
+  clearMsg();
+  const name = document.getElementById('s-name').value.trim();
+  const sid = document.getElementById('s-sid').value.trim();
+  const email = document.getElementById('s-email').value.trim();
+  const phone = document.getElementById('s-phone').value.trim();
+  const year = parseInt(document.getElementById('s-year').value);
+  const course = document.getElementById('s-course').value.trim();
+  const dept = document.getElementById('s-dept').value.trim();
+  const pw = document.getElementById('s-pw').value;
+  const pw2 = document.getElementById('s-pw2').value;
+
+  if (!name||!sid||!email||!course||!dept||!pw) { showMsg('Please fill all required fields.'); return; }
+  if (pw !== pw2) { showMsg('Passwords do not match.'); return; }
+  if (pw.length < 8) { showMsg('Password must be at least 8 characters.'); return; }
+
+  try {
+    const data = await apiPost('/auth/register/student', {
+      email, password:pw, full_name:name,
+      student_id:sid, course, department:dept, year, phone
+    });
+    localStorage.setItem('sait_token', data.access_token);
+    localStorage.setItem('sait_role', 'student');
+    localStorage.setItem('sait_name', data.full_name);
+    showMsg('Account created successfully!', 'success');
+    setTimeout(() => showDashboardPreview({ token: data.access_token, role:'student', fullName:data.full_name }), 800);
+  } catch(err) {
+    showMsg(err.message);
+  }
+}
+
+// ─── REGISTER TEACHER ─────────────────────────────────────────────────────────
+async function doRegisterTeacher() {
+  clearMsg();
+  const name = document.getElementById('t-name').value.trim();
+  const tid = document.getElementById('t-tid').value.trim();
+  const email = document.getElementById('t-email').value.trim();
+  const phone = document.getElementById('t-phone').value.trim();
+  const dept = document.getElementById('t-dept').value.trim();
+  const subj = document.getElementById('t-subj').value.trim();
+  const pw = document.getElementById('t-pw').value;
+  const pw2 = document.getElementById('t-pw2').value;
+
+  if (!name||!tid||!email||!dept||!subj||!pw) { showMsg('Please fill all required fields.'); return; }
+  if (pw !== pw2) { showMsg('Passwords do not match.'); return; }
+  if (pw.length < 8) { showMsg('Password must be at least 8 characters.'); return; }
+
+  try {
+    const data = await apiPost('/auth/register/teacher', {
+      email, password:pw, full_name:name,
+      teacher_id:tid, department:dept, subject:subj, phone
+    });
+    localStorage.setItem('sait_token', data.access_token);
+    localStorage.setItem('sait_role', 'teacher');
+    localStorage.setItem('sait_name', data.full_name);
+    showMsg('Account created successfully!', 'success');
+    setTimeout(() => showDashboardPreview({ token: data.access_token, role:'teacher', fullName:data.full_name }), 800);
+  } catch(err) {
+    showMsg(err.message);
+  }
+}
+
+// ─── DASHBOARD PREVIEW ────────────────────────────────────────────────────────
+async function showDashboardPreview({ token, role, fullName }) {
+  document.getElementById('auth-section').style.display = 'none';
+  document.getElementById('dashboard-preview').style.display = 'block';
+
+  const initials = fullName.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const avatarColor = role === 'teacher' ? '#4f7cff' : '#2dd98f';
+  document.getElementById('dash-avatar').style.background = avatarColor + '22';
+  document.getElementById('dash-avatar').style.color = avatarColor;
+  document.getElementById('dash-avatar').style.fontFamily = 'DM Mono, monospace';
+  document.getElementById('dash-avatar').textContent = initials;
+  document.getElementById('dash-name').textContent = fullName;
+  document.getElementById('dash-role-label').textContent = role === 'teacher' ? '🧑‍🏫 Teacher' : '🧑‍🎓 Student';
+
+  // Demo profile data
+  if (role === 'student') {
+    document.getElementById('student-dash').style.display = 'block';
+    const isRiya = fullName.includes('Riya');
+    const att = isRiya ? 54 : 79;
+    const score = isRiya ? 51 : 84;
+    const assign = isRiya ? 45 : 91;
+    const risk = isRiya ? 'High' : 'Low';
+    const riskClass = `risk-${risk.toLowerCase()}`;
+
+    document.getElementById('student-metrics').innerHTML = `
+      <div class="dash-card">
+        <div class="dash-card-label">Attendance</div>
+        <div class="dash-card-value" style="color:${att<70?'var(--red)':'var(--green)'}">${att}%</div>
+        <div class="dash-card-sub">Target: 85%</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-label">Avg Score</div>
+        <div class="dash-card-value" style="color:var(--accent)">${score}</div>
+        <div class="dash-card-sub">Out of 100</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-label">Assignments</div>
+        <div class="dash-card-value" style="color:#a78bfa">${assign}%</div>
+        <div class="dash-card-sub">Completion</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-label">Risk Level</div>
+        <div style="margin-top:6px"><span class="risk-pill ${riskClass}"><span class="risk-dot"></span>${risk}</span></div>
+      </div>`;
+
+    document.getElementById('student-profile-detail').innerHTML = `
+      <div class="pd-title">Profile Details</div>
+      <div class="pd-row"><span class="pd-key">Student ID</span><span class="pd-val">STU-007</span></div>
+      <div class="pd-row"><span class="pd-key">Course</span><span class="pd-val">B.Tech CS</span></div>
+      <div class="pd-row"><span class="pd-key">Department</span><span class="pd-val">Computer Science</span></div>
+      <div class="pd-row"><span class="pd-key">Year</span><span class="pd-val">2nd Year</span></div>
+      <div class="pd-row"><span class="pd-key">Email</span><span class="pd-val" style="color:var(--accent)">${localStorage.getItem('sait_name')?.toLowerCase().replace(' ','')+'@student.sait.edu'}</span></div>`;
+  } else {
+    document.getElementById('teacher-dash').style.display = 'block';
+    document.getElementById('teacher-profile-detail').innerHTML = `
+      <div class="pd-title">Profile Details</div>
+      <div class="pd-row"><span class="pd-key">Teacher ID</span><span class="pd-val">TCH-001</span></div>
+      <div class="pd-row"><span class="pd-key">Department</span><span class="pd-val">Computer Science</span></div>
+      <div class="pd-row"><span class="pd-key">Subject</span><span class="pd-val">Data Structures</span></div>
+      <div class="pd-row"><span class="pd-key">Email</span><span class="pd-val" style="color:var(--accent)">teacher@sait.edu</span></div>`;
+    document.getElementById('teacher-metrics').innerHTML = `
+      <div class="dash-card">
+        <div class="dash-card-label">Class Size</div>
+        <div class="dash-card-value" style="color:var(--accent)">24</div>
+        <div class="dash-card-sub">CS-401</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-label">At-Risk</div>
+        <div class="dash-card-value" style="color:var(--red)">4</div>
+        <div class="dash-card-sub">Need attention</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-label">Avg Score</div>
+        <div class="dash-card-value" style="color:var(--green)">71.4</div>
+        <div class="dash-card-sub">Class average</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-label">Attendance</div>
+        <div class="dash-card-value" style="color:#a78bfa">78%</div>
+        <div class="dash-card-sub">Class average</div>
+      </div>`;
+  }
+}
+
+// ─── LOGOUT ──────────────────────────────────────────────────────────────────
+function doLogout() {
+  localStorage.removeItem('sait_token');
+  localStorage.removeItem('sait_role');
+  localStorage.removeItem('sait_name');
+  document.getElementById('dashboard-preview').style.display = 'none';
+  document.getElementById('auth-section').style.display = 'block';
+  document.getElementById('student-dash').style.display = 'none';
+  document.getElementById('teacher-dash').style.display = 'none';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  switchTab('login');
+}
+
+// ─── RESUME SESSION ──────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  const token = localStorage.getItem('sait_token');
+  const role = localStorage.getItem('sait_role');
+  const name = localStorage.getItem('sait_name');
+  if (token && role && name) {
+    showDashboardPreview({ token, role, fullName: name });
+  }
+});
+</script>
+</body>
+</html>
